@@ -1,0 +1,7 @@
+# VAE setting
+vae:
+  vae_type: SDVAE
+  vae_pretrained: ../checkpoints/RAR_modelzoo/stable-diffusion-3.5-medium/sd3.5_medium.safetensors
+  vae_latent_dim: 16
+  vae_downsample_rate: 8
+  sample_posterior: true

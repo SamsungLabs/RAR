@@ -1,0 +1,136 @@
+data:
+  data_dir: [dataset/]
+  image_size: 512
+  caption_proportion:
+    prompt: 1
+  external_caption_suffixes: []
+  external_clipscore_suffixes: []
+  clip_thr_temperature: 0.1
+  clip_thr: 25.0
+  load_text_feat: false
+  load_vae_feat: false
+  transform: default_train
+  type: IRImgDataset # IRImgQTokenDataset
+  sort_dataset: false
+  dset: train_brief_composite    # ["train_brief", "train_brief_composite", "test_brief", "train_detail", "test_detail"]
+  max_samples: null
+  use_tokens: prefill  # "hidden_state", "prefill", "ALL"
+  max_tokens: 400
+  caption_type: "question" # "question", "GT", "IQA"
+  return_meta: True
+  
+# model config
+model:
+  model: SD35M_D2C
+  model_pretrained: ./checkpoints/stable-diffusion-3.5-medium/sd3.5_medium.safetensors
+  shift: 3.0
+  image_size: 512
+  input_channel: 16
+  mixed_precision: bf16
+  fp32_attention: true
+  load_from: /home/work/shared-fi-datasets-01/users/hsiang.chen/Project/IR/sd35_pix2pix/output/sd35m_d2c_breif/checkpoints/epoch_100_step_302601.pth # IR pre-trained
+  resume_from: null 
+  aspect_ratio_type: ASPECT_RATIO_1024
+  multi_scale: true
+  attn_type: linear
+  ffn_type: glumbconv
+  mlp_acts:
+    - silu
+    - silu
+    -
+  mlp_ratio: 2.5
+  use_pe: false
+  qk_norm: false
+  class_dropout_prob: 0.1
+
+# VAE setting
+vae:
+  vae_type: SDVAE
+  vae_pretrained: ./checkpoints/stable-diffusion-3.5-medium/sd3.5_medium.safetensors
+  weight_dtype: float32
+  scale_factor: 0.41407
+  vae_latent_dim: 16
+  vae_downsample_rate: 8
+  sample_posterior: true
+
+# text encoder
+text_encoder:
+  text_encoder_name: empty # sd35-text
+  text_encoder_pretrained: ./checkpoints/stable-diffusion-3.5-medium/text_encoders
+  y_norm: true
+  y_norm_scale_factor: 0.01
+  model_max_length: 300
+  chi_prompt:
+    - a photo of a cat
+    - Convenience store entrance at night. On the glass door, a vinyl decal reads 'OPEN FOR QUALITY'. Inside, shelves and fluorescent lights; outside, a cyclist passing by
+    - Sunrise beach, shallow tide washing over smooth sand. A piece of weathered driftwood lies near the shoreline with a subtle branded text [SOS] on its surface; wet sand reflections, micro-ripples, sun flare at horizon.
+
+# connector setting
+connector:
+  model: QFormer
+  model_pretrained: null
+  hidden_dim: 1024
+  layers: 8
+  heads: 16
+  resume_from: null
+  load_from: /home/work/shared-fi-datasets-01/users/hsiang.chen/Project/IQAIR/sd35_conditioning_s1/output/sd35m_p2p_breif_connector/checkpoints/epoch_100_step_19001.pth
+
+# IQA model
+assessment: 
+  model: SDQA
+  model_config: ./iqa/config.yaml
+
+# Sana schedule Flow
+scheduler:
+  predict_flow_v: true
+  noise_schedule: linear_flow
+  pred_sigma: false
+  flow_shift: 3.0 # sd3.5-meduiam
+  # logit-normal timestep
+  weighting_scheme: logit_normal
+  logit_mean: 0.0
+  logit_std: 1.0
+  vis_sampler: flow_dpm-solver
+  recur_round: 4
+  recur_truncated: False
+  recur_loss_weights:
+    - 0.2
+    - 0.3
+    - 0.4
+    - 1.0
+
+# training setting
+train:  
+  train_type: bf16  # bf16, fp16, fp32
+  resume_from: null
+  num_workers: 20
+  seed: 1229
+  train_batch_size: 64
+  num_epochs: 100 # bs=64*8=512, training: 7k iteration. (ep: 40 is enough), global_batch_size: 8(gpu)*4(mini-batch)*8(accumulation)=256
+  gradient_accumulation_steps: 8
+  grad_checkpointing: true
+  gradient_clip: 0.1
+  optimizer:
+    betas:
+      - 0.9
+      - 0.999
+      - 0.9999
+    eps:
+      - 1.0e-30
+      - 1.0e-16
+    lr: 0.00005
+    type: CAMEWrapper
+    weight_decay: 0.0
+  lr_schedule: cosine
+  lr_schedule_args:
+    num_warmup_steps: 2000
+  local_save_vis: true # if save log image locally
+  visualize: true
+  eval_sampling_steps: 500
+  log_interval: 50
+  save_model_epochs: 1
+  save_model_steps: 5000
+  work_dir: output/sd35m_d2c_end2end
+  online_metric: false
+  eval_metric_step: 2000
+  online_metric_dir: metric_helper

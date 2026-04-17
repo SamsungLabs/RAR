@@ -1,0 +1,127 @@
+# model
+model:
+  vision_encoder_type: 'clip'
+  vision_encoder_path: ./checkpoints/RAR_modelzoo/CLIP/clip/ViT-L-14.pt # for clip vision encoder
+
+  tgt_vision_encoder_type: 'SDVAE' # [clip, autodir, DC-AE, SDVAE]
+  tgt_vision_encoder_config: ./model/sd35/config.yaml  # for sd35 vision encoder
+  tgt_vision_encoder_dtype: bfloat16  # for sd35 vision encoder
+  tgt_vision_projector_type: 'former' # [simple, former]
+  tgt_vision_projector_layers: 12
+  tgt_vision_projector_weight: ./checkpoints/RAR_modelzoo/LQA/s1/ckpt_epoch50
+  tgt_pos: true
+
+  vision_feature_type: local  # [local, global]
+
+  llm_path: ./checkpoints/RAR_modelzoo/vicuna-7b-v1.5
+  llm_conv_type: vicuna_v1  # conv -> conversation
+  lora:  # lora hyper-parameters
+    lora_r: 16
+    lora_alpha: 16
+    lora_dropout: 0.1
+    lora_target_modules: ['q_proj', 'k_proj', 'v_proj', 'o_proj']
+
+  delta_path: ./checkpoints/RAR_modelzoo/DepictQA2-DQ495K/ckpt.pt  # load trained params, for resume / infer
+  unique_tag: true
+  resume: true
+
+  use_encoder: 'SDVAE'
+  checkpoints: ./checkpoints/RAR_modelzoo/LQA/s2/ckpt/ckpt_epoch1.pt
+  keep_encoder: False
+  end2end: True
+
+# train
+train:
+#   epochs: 5
+#   warmup_type: WarmupDecayLR
+#   warmup_rate: 0.1
+#   warmup_max_lr: 0.0002
+#   warmup_min_lr: 1.0e-08
+#   log_step: 100
+#   save_freq_step: 3000  # can be set null
+#   save_freq_epoch: 1
+#   save_dir: ./outputs/log_sd35m_s2/former_bf/ckpt/
+#   log_dir: ./outputs/log_sd35m_s2/former_bf/
+  max_tokens: 512  # query + answer (no system & vision)
+#   train_micro_batch_size_per_gpu: 1 # only support batch size = 1 for stage 2.
+#   gradient_accumulation_steps: 1
+
+#   fp16: true
+#   bf16: false
+
+# optimizer:
+#   type: Adam
+#   betas: [0.9, 0.95]
+#   eps: 1.0e-08
+#   lr: 0.0002
+#   weight_decay: 0.001
+    
+# # infer
+# infer:
+#   output_prob_id: false
+#   output_confidence: true
+#   sentence_model: /home/work/shared-fi-datasets-01/users/hsiang.chen/Project/ModelZoo/SentenceTransformers/all-MiniLM-L6-v2
+#   answer_dir: ./outputs/log_sd35m_s2/former_bf/answers/
+#   # IQA needs deterministic answers, e.g., A / B is better, so temperature = 0.0
+#   temperature: 0.0  # 0.0 -> do_sample = False
+#   top_p: 0.9
+#   max_new_tokens: 400  # only answer
+
+# resize & random crop
+vision_preprocess:
+#   patch_size: 16  # 14 for clip, 16 for SD. 32 for DCAE
+  resize: 256     # origin: min -> 224, set : mix -> 256,  256
+#   min_size: 80   # 70 for clip, 80 for SD.
+#   max_size: 256   # set max 256, origin 672
+#   crop_ratio: [0.7, 1.]
+#   keep_ratio: true
+#   source_size: 224
+
+## Optimization
+# deepspeed:
+#   train_micro_batch_size_per_gpu: 1 # only support batch size = 1 for stage 2.
+#   gradient_accumulation_steps: 32
+#   gradient_clipping: 1.0
+#   steps_per_print: 1
+
+#   zero_optimization:
+#     allgather_bucket_size: 500000000
+#     allgather_partitions: true
+#     contiguous_gradients: true
+#     offload_optimizer:
+#       device: cpu
+#     stage: 1
+
+#   optimizer:
+#     type: Adam
+#     params:
+#       betas:
+#       - 0.9
+#       - 0.95
+#       eps: 1.0e-08
+#       lr: 0.0002
+#       weight_decay: 0.001
+
+#   scheduler:
+#     type: WarmupDecayLR
+#     params:
+#       total_num_steps: 20000
+#       warmup_max_lr: 0.0002
+#       warmup_min_lr: 1.0e-08
+#       warmup_num_steps: 10
+
+#   fp16:
+#     enabled: true
+#     min_loss_scale: 1
+#     opt_level: O2
+
+#   bf16:
+#     enable: false
+
+#   activation_checkpointing:
+#     partition_activations: true
+#     cpu_checkpointing: true
+#     contiguous_memory_optimization: false
+#     number_checkpoints: null
+#     synchronize_checkpoint_boundary: false
+#     profile: false

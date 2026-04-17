@@ -1,0 +1,19 @@
+rain + haze
+motion blur + low resolution
+dark + noise
+defocus blur + jpeg compression artifact
+
+noise + jpeg compression artifact
+rain + low resolution
+motion blur + dark
+defocus blur + haze
+
+motion blur + jpeg compression artifact
+haze + noise
+defocus blur + low resolution
+rain + dark
+
+haze + motion blur + low resolution
+rain + noise + low resolution
+dark + defocus blur + jpeg compression artifact
+motion blur + defocus blur + noise
